@@ -1,10 +1,10 @@
-import Editor from './components/editor'
 import './App.css';
+import Highlighter from './components/Highlighter';
 
 function App() {
   return (
     <div className="App">
-      <Editor></Editor>
+      <Highlighter></Highlighter>
     </div>
   );
 }
