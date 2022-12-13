@@ -53,11 +53,21 @@ function Highlighter() {
                 }
             }
         } else if (range.getBoundingClientRect().left !== 0 && range.getBoundingClientRect().top !== 0) {
-            setSelectionMetadata(selection);
-            setRightInterval(absoluteRightPosition);
-            setLeftInterval(absoluteLeftPosition);
-            setIsCreated(false);
-            setSelectedComment('');
+            let shouldHighlight = 1;
+            for (let i = 0; i < highlightStartIntervals.length; i++) {
+                if (absoluteLeftPosition <= highlightEndIntervals[i] && absoluteRightPosition >= highlightStartIntervals[i]) {
+                    shouldHighlight = 0;
+                    break;
+                }
+            }
+
+            if (shouldHighlight) {
+                setSelectionMetadata(selection);
+                setRightInterval(absoluteRightPosition);
+                setLeftInterval(absoluteLeftPosition);
+                setIsCreated(false);
+                setSelectedComment('');
+            }
         }
     }
 

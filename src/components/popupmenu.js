@@ -43,28 +43,33 @@ export default function PositionedMenu(props) {
 
   function handleFocus() {
     console.log("FOCUSED");
-    // highlightsContext.addHighlightStartInterval(leftInterval);
-    // highlightsContext.addHighlightEndInterval(rightInterval);
-    // highlightsContext.addComment("TESTING");
+    if (!isCreated) {
+      highlightsContext.addHighlightStartInterval(leftInterval);
+      highlightsContext.addHighlightEndInterval(rightInterval);
+      highlightsContext.addComment("TESTING");
+    }
   }
 
   function handleClose() {
     console.log("CLOSED");
+    if (!isCreated) {
+      highlightsContext.deleteHighlightInterval(leftInterval);
+    }
     // highlightsContext.deleteHighlightInterval(leftInterval);
     setOpen(false);
   }
 
   function handleClick() {
-    if (isCreated) {
-      highlightsContext.modifyComments(leftInterval, document.getElementById('outlined-basic').value)
-    } else {
-      console.log("CLICKED");
-      // highlightsContext.deleteHighlightInterval(leftInterval);
-      highlightsContext.addHighlightStartInterval(leftInterval);
-      highlightsContext.addHighlightEndInterval(rightInterval);
-      highlightsContext.addComment(document.getElementById('outlined-basic').value);
+    if (document.getElementById('outlined-basic').value.length !== 0) {
+      if (isCreated) {
+        highlightsContext.modifyComments(leftInterval, document.getElementById('outlined-basic').value)
+      } else {
+        console.log("CLICKED");
+        // highlightsContext.deleteHighlightInterval(leftInterval);
+        highlightsContext.modifyComments(leftInterval, document.getElementById('outlined-basic').value);
+      }
+      setOpen(false);
     }
-    setOpen(false);
   }
 
   function handleRemove() {
