@@ -1,11 +1,11 @@
 import { useContext, useState } from 'react'
 
 import Popover from '@mui/material/Popover';
-import HighlightsContext from './store/highlights-context';
+import HighlightsContext from '../store/highlights-context';
 import { Button } from '@mui/material';
 import { TextField } from '@mui/material'
 
-import classes from './popupmenu.module.css'
+import classes from '../style/PopupMenu.module.css'
 
 export default function PositionedMenu(props) {
   const highlightsContext = useContext(HighlightsContext);
@@ -79,8 +79,14 @@ export default function PositionedMenu(props) {
 
   console.log("CHECKING : " + open);
 
-  if (rightInterval - leftInterval > 0 || isCreated) {
+  console.log("RIGHT : " + rightInterval);
+  console.log("LEFT : " + leftInterval);
 
+  if(open) {
+    
+  }
+
+  if (rightInterval - leftInterval > 0 || isCreated) {
     if (isCreated) {
       return (
         <div>

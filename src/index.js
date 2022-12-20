@@ -4,7 +4,7 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
-import { HighlightsContextProvider } from './components/store/highlights-context';
+import { HighlightsContextProvider } from './store/highlights-context';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

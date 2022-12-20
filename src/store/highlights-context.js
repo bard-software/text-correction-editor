@@ -26,7 +26,7 @@ export function HighlightsContextProvider(props) {
             }
          }
 
-         if (min != i) {
+         if (min !== i) {
             let tmpStart = updatedStartIntervals[i];
             let tmpEnd = updatedEndIntervals[i];
             let tmpComment = updatedComments[i];
@@ -75,6 +75,14 @@ export function HighlightsContextProvider(props) {
             return newComments;
         });
     }
+
+    // function isIntervalContainedHandler(start, end) {
+    //     for(let i = 0; i < updatedStartIntervals.length; i++)
+    //         if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end)
+    //             return true;
+
+    //     return false;
+    // }
 
     function deleteHighlightIntervalHandler(start) {
         const index = updatedStartIntervals.indexOf(start);

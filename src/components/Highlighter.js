@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
-import PositionedMenu from "./popupmenu";
-import HighlightsContext from "./store/highlights-context";
+import PositionedMenu from "./PopupMenu";
+import HighlightsContext from "../store/highlights-context";
 
 function Highlighter() {
     const highlightsContext = useContext(HighlightsContext);
@@ -18,70 +18,149 @@ function Highlighter() {
     const highlightEndIntervals = highlightsContext.highlightEndIntervals;
     const comments = highlightsContext.comments;
 
-    const handleMouseUp = () => {
-        let selection = window.getSelection();
-                
+    function divideTextIntoGivenParts(letters) {
+        const parts = [];
+
+        var id = 1;
+
+        let currentStatus = letters[0];
+        let currentSubstring = text[0];
+        for (let i = 1; i <= text.length; i++) {
+            if (currentStatus !== letters[i]) {
+                if (currentStatus === 1) {
+                    parts.push(<mark id={id} style={{backgroundColor: "red"}}>{currentSubstring}</mark>);
+                } else if(currentStatus === 2) {
+                    parts.push(<mark id={id} style={{backgroundColor: "yellow"}}>{currentSubstring}</mark>);
+                } else if (currentStatus === 3) {
+                    parts.push(<mark id={id} style={{backgroundColor: "green"}}>{currentSubstring}</mark>);
+                } else {
+                    parts.push(<span id={id}>{currentSubstring}</span>);
+                }
+
+                id ++;
+                currentStatus = letters[i];
+                currentSubstring = text[i];
+            } else {
+                currentSubstring += text[i];
+            }
+        }
+
+        return parts;
+    }
+
+    function findAnnotationsCountShadowingEachLetter(startIntervals, startCnt, endIntervals, endCnt) {
+        var letters = [];
+
+        let startPtr = 0;
+        let endPtr = 0;
+        for (let i = 0; i < text.length; i++) {
+            if (i === startIntervals[startPtr]) {
+                console.log("HERE IS THE BEGINNING : " + i + ", CNT : " + startCnt[i]);
+                for (let j = 0; j < startCnt[i]; j++)
+                    startPtr++;
+            }
+    
+            letters[i] = startPtr - endPtr;
+    
+            if (i === endIntervals[endPtr]) {
+                console.log("HERE IS THE ENDING : " + i + ", CNT : " + endCnt[i]);
+                for (let j = 0; j < endCnt[i]; j++)
+                    endPtr++;
+            }
+        }
+
+        letters[text.length] = 1000;
+
+        return letters;
+    }
+
+    function purifyArray(toBePurified, cnt) {
+        var purified = [];
+        for (let i = 0; i < toBePurified.length; i++) {
+            if (typeof cnt[toBePurified[i]] === 'undefined') {
+                cnt[toBePurified[i]] = 1;
+                purified.push(toBePurified[i]);
+            } else {
+                cnt[toBePurified[i]] ++;
+            }
+        }
+
+        return purified;
+    }
+
+    function calculateAbsoluteOffset(selection) {
         var range = selection.getRangeAt(0);
 
-        var absoluteLeftPosition = range.startOffset;
-        var absoluteRightPosition = range.endOffset;
-        try {
-            const idNumber = Number(selection.anchorNode.parentNode.id);
-            
-            if (!Number.isNaN(idNumber) && idNumber > 1) {
-                for (var i = idNumber - 1; i >= 1; i--) {
-                    if (document.getElementById(i) !== null) {
-                        absoluteLeftPosition += document.getElementById(i).textContent.length;
-                        absoluteRightPosition += document.getElementById(i).textContent.length;
-                    } 
-                }
-            }
+        var absoluteLeftOffset = range.startOffset;
+        var absoluteRightOffset = 0;
 
-        } catch (err) { console.log(err.message) }
+        const idNumber = Number(selection.anchorNode.parentNode.id);
+        
+        if (!Number.isNaN(idNumber) && idNumber > 1) {
+            for (var i = idNumber - 1; i >= 1; i--)
+                if (document.getElementById(i) !== null)
+                    absoluteLeftOffset += document.getElementById(i).textContent.length;
+        }
 
-        if (absoluteLeftPosition === absoluteRightPosition && absoluteLeftPosition !== 0) {
-            console.log("CLICK MODE");
-            for (let i = 0; i < highlightStartIntervals.length; i++) {
-                if (absoluteLeftPosition >= highlightStartIntervals[i] && absoluteLeftPosition <= highlightEndIntervals[i]) {          
-                    console.log("CONTAINED");
-                    setSelectionMetadata(selection);
-                    setLeftInterval(highlightStartIntervals[i]);
-                    setRightInterval(highlightEndIntervals[i] + 10);
-                    setClickPosition(absoluteLeftPosition);
-                    setIsCreated(true);
-                    setSelectedComment(comments[i]);
-                }
-            }
-        } else if (range.getBoundingClientRect().left !== 0 && range.getBoundingClientRect().top !== 0) {
-            let shouldHighlight = 1;
-            for (let i = 0; i < highlightStartIntervals.length; i++) {
-                if (absoluteLeftPosition <= highlightEndIntervals[i] && absoluteRightPosition >= highlightStartIntervals[i]) {
-                    shouldHighlight = 0;
-                    break;
-                }
-            }
+        absoluteRightOffset = absoluteLeftOffset + selection.toString().length;
 
-            if (shouldHighlight) {
-                setSelectionMetadata(selection);
-                setRightInterval(absoluteRightPosition);
-                setLeftInterval(absoluteLeftPosition);
-                setIsCreated(false);
-                setSelectedComment('');
-            }
+        return [absoluteLeftOffset, absoluteRightOffset];
+    }
+
+    function findClickedPositionInterval(selection, leftOffset) {
+        let ans = -1;
+        for (let i = 0; i < highlightStartIntervals.length; i++)
+            if (leftOffset >= highlightStartIntervals[i] && leftOffset <= highlightEndIntervals[i])
+                ans = i;
+
+        if(ans !== -1) {
+            setSelectionMetadata(selection);
+            setLeftInterval(highlightStartIntervals[ans]);
+            setRightInterval(highlightEndIntervals[ans] + 10);
+            setClickPosition(leftOffset);
+            setIsCreated(true);
+            setSelectedComment(comments[ans]);
+
         }
     }
 
-    const n = highlightStartIntervals.length;
+    const handleMouseUp = () => {
+        let selection = window.getSelection();
+                
+        var range = calculateAbsoluteOffset(selection);
+        const absoluteLeftOffset = range[0];
+        const absoluteRightOffset = range[1];
 
-    console.log("BEGIN : " + highlightStartIntervals);
-    console.log("FINISH : " + highlightEndIntervals);
-    console.log(comments);
+        if (absoluteLeftOffset === absoluteRightOffset && absoluteLeftOffset !== 0) {
+            findClickedPositionInterval(selection, absoluteLeftOffset);
+        } else if (selection.getRangeAt(0).getBoundingClientRect().left !== 0 && selection.getRangeAt(0).getBoundingClientRect().top !== 0) {
+            setSelectionMetadata(selection);
+            setRightInterval(absoluteRightOffset);
+            setLeftInterval(absoluteLeftOffset);
+            setIsCreated(false);
+            setSelectedComment('');
+        }
+    }
 
-    const parts = [];
+    let endCnt = [];
+    let purifiedEnd = purifyArray(highlightEndIntervals, endCnt);
 
-    let currentIndex;
+    let startCnt = [];
+    let purifiedStart = purifyArray(highlightStartIntervals, startCnt);
 
-    if (n === 0) {
+    purifiedEnd.sort(function(a, b) {
+        return a - b;
+    });
+
+    purifiedStart.sort(function(a, b) {
+        return a - b;
+    });
+
+    var letters = findAnnotationsCountShadowingEachLetter(purifiedStart, startCnt, purifiedEnd, endCnt);
+
+    const parts = divideTextIntoGivenParts(letters);
+
+    if (text.length === 0) {
         return(
             <div id="unique" onMouseUp={handleMouseUp}>
                 <div>{text}</div>
@@ -95,61 +174,23 @@ function Highlighter() {
                     metadata={selectionMetadata}/>
             </div>
         );
-    }
-
-    let i;
-
-    var id = 1;
-
-    var temp;
-
-    if (highlightStartIntervals[0] !== 0) {
-        temp = text.substring(0, highlightStartIntervals[0]);
-        parts.push(<span id={id}>{temp}</span>);
-        i = 0;
-        currentIndex = highlightStartIntervals[0];
     } else {
-        temp = text.substring(highlightStartIntervals[0], highlightEndIntervals[0] + 1)
-        parts.push(<mark id={id}>{temp}</mark>);
-        i = 1;
-        currentIndex = highlightEndIntervals[0] + 1;
-    }
+        return(
+            <div id="unique" onMouseUp={handleMouseUp}>
+                <div>
+                    {parts}
+                </div>
 
-    id++;
-
-    for (i; i < n; i++) {
-        temp = text.substring(currentIndex, highlightStartIntervals[i]);
-        parts.push(<span id={id}>{temp}</span>);
-
-        id++;
-
-        temp = text.substring(highlightStartIntervals[i], highlightEndIntervals[i] + 1);
-        parts.push(<mark id={id}>{temp}</mark>)
-    
-        id++
-
-        currentIndex = highlightEndIntervals[i] + 1;
-    }
-
-    temp = text.substring(currentIndex);
-    parts.push(<span id={id}>{temp}</span>);
-
-    console.log("RETURN SECOND");
-    return(
-        <div id="unique" onMouseUp={handleMouseUp}>
-            <div>
-                {parts}
+                <PositionedMenu
+                        isCreated={isCreated}
+                        selectedComment={selectedComment}
+                        leftInterval={leftInterval} 
+                        rightInterval={rightInterval} 
+                        clickPosition={clickPosition}
+                        metadata={selectionMetadata}/>
             </div>
-
-            <PositionedMenu
-                    isCreated={isCreated}
-                    selectedComment={selectedComment}
-                    leftInterval={leftInterval} 
-                    rightInterval={rightInterval} 
-                    clickPosition={clickPosition}
-                    metadata={selectionMetadata}/>
-        </div>
-    );
+        );
+    }
 }
 
 export default Highlighter;
