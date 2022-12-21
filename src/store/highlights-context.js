@@ -66,40 +66,42 @@ export function HighlightsContextProvider(props) {
         })
     }
 
-    function modifyCommentsHandler(start, newComment) {
-        const index = updatedStartIntervals.indexOf(start);
+    function modifyCommentsHandler(start, end, newComment) {
+        let toModifyIndex = -1;
+        for (let i = 0; i < updatedStartIntervals.length; i++) {
+            if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end) {
+                toModifyIndex = i;
+                break;
+            }
+        }
+
         setUpdatedComments((pre) => {
             let newComments = pre;
-            newComments[index] = newComment;
+            newComments[toModifyIndex] = newComment;
 
             return newComments;
         });
     }
 
-    // function isIntervalContainedHandler(start, end) {
-    //     for(let i = 0; i < updatedStartIntervals.length; i++)
-    //         if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end)
-    //             return true;
-
-    //     return false;
-    // }
-
-    function deleteHighlightIntervalHandler(start) {
-        const index = updatedStartIntervals.indexOf(start);
+    function deleteHighlightIntervalHandler(start, end) {
+        let toDeleteIndex = -1;
+        for (let i = 0; i < updatedStartIntervals.length; i++) {
+            if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end) {
+                toDeleteIndex = i;
+                break;
+            }
+        }
         
-        const endInterval = updatedEndIntervals[index];
-        const comment = updatedComments[index];
-
         setUpdatedStartIntervals((pre) => {
-            return pre.filter((item) => item !== start);
+            return pre.filter((_, index) => index !== toDeleteIndex);
         });
 
         setUpdatedEndIntervals((pre) => {
-            return pre.filter((item) => item !== endInterval);
+            return pre.filter((_, index) => index !== toDeleteIndex);
         });
 
         setUpdatedComments((pre) => {
-            return pre.filter((item) => item !== comment);
+            return pre.filter((_, index) => index !== toDeleteIndex);
         });
 
     }

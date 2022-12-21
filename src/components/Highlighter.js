@@ -18,27 +18,36 @@ function Highlighter() {
     const highlightEndIntervals = highlightsContext.highlightEndIntervals;
     const comments = highlightsContext.comments;
 
+    function calculateColorToUse(overlapsCount) {
+        switch (overlapsCount) {
+            case 1 :
+                return "red";
+
+            case 2 :
+                return "yellow";
+
+            case 3 :
+                return "green";
+
+            default :
+                return "white";
+        }
+    }
+
     function divideTextIntoGivenParts(letters) {
         const parts = [];
 
         var id = 1;
 
-        let currentStatus = letters[0];
+        let currentOverlapsCount = letters[0];
         let currentSubstring = text[0];
         for (let i = 1; i <= text.length; i++) {
-            if (currentStatus !== letters[i]) {
-                if (currentStatus === 1) {
-                    parts.push(<mark id={id} style={{backgroundColor: "red"}}>{currentSubstring}</mark>);
-                } else if(currentStatus === 2) {
-                    parts.push(<mark id={id} style={{backgroundColor: "yellow"}}>{currentSubstring}</mark>);
-                } else if (currentStatus === 3) {
-                    parts.push(<mark id={id} style={{backgroundColor: "green"}}>{currentSubstring}</mark>);
-                } else {
-                    parts.push(<span id={id}>{currentSubstring}</span>);
-                }
+            if (currentOverlapsCount !== letters[i]) {
+                var color = calculateColorToUse(currentOverlapsCount);
+                parts.push(<mark id={id} style={{backgroundColor: color}}>{currentSubstring}</mark>);
 
                 id ++;
-                currentStatus = letters[i];
+                currentOverlapsCount = letters[i];
                 currentSubstring = text[i];
             } else {
                 currentSubstring += text[i];
@@ -51,21 +60,26 @@ function Highlighter() {
     function findAnnotationsCountShadowingEachLetter(startIntervals, startCnt, endIntervals, endCnt) {
         var letters = [];
 
-        let startPtr = 0;
-        let endPtr = 0;
+        let startPointer = 0;
+        let endPointer = 0;
+        let openedHighlightsCount = 0;
+        let closedHighlightsCount = 0;
+
         for (let i = 0; i < text.length; i++) {
-            if (i === startIntervals[startPtr]) {
-                console.log("HERE IS THE BEGINNING : " + i + ", CNT : " + startCnt[i]);
+            if (i === startIntervals[startPointer]) {
                 for (let j = 0; j < startCnt[i]; j++)
-                    startPtr++;
+                    openedHighlightsCount++;
+
+                startPointer ++;
             }
     
-            letters[i] = startPtr - endPtr;
+            letters[i] = openedHighlightsCount - closedHighlightsCount;
     
-            if (i === endIntervals[endPtr]) {
-                console.log("HERE IS THE ENDING : " + i + ", CNT : " + endCnt[i]);
+            if (i === endIntervals[endPointer]) {
                 for (let j = 0; j < endCnt[i]; j++)
-                    endPtr++;
+                    closedHighlightsCount++;
+                
+                endPointer ++;
             }
         }
 
@@ -74,18 +88,18 @@ function Highlighter() {
         return letters;
     }
 
-    function purifyArray(toBePurified, cnt) {
-        var purified = [];
-        for (let i = 0; i < toBePurified.length; i++) {
-            if (typeof cnt[toBePurified[i]] === 'undefined') {
-                cnt[toBePurified[i]] = 1;
-                purified.push(toBePurified[i]);
+    function oddRepetitousOut(toBeCleaned, count) {
+        var withoutRepetitous = [];
+        for (let i = 0; i < toBeCleaned.length; i++) {
+            if (typeof count[toBeCleaned[i]] === 'undefined') {
+                count[toBeCleaned[i]] = 1;
+                withoutRepetitous.push(toBeCleaned[i]);
             } else {
-                cnt[toBePurified[i]] ++;
+                count[toBeCleaned[i]] ++;
             }
         }
 
-        return purified;
+        return withoutRepetitous;
     }
 
     function calculateAbsoluteOffset(selection) {
@@ -116,7 +130,7 @@ function Highlighter() {
         if(ans !== -1) {
             setSelectionMetadata(selection);
             setLeftInterval(highlightStartIntervals[ans]);
-            setRightInterval(highlightEndIntervals[ans] + 10);
+            setRightInterval(highlightEndIntervals[ans]);
             setClickPosition(leftOffset);
             setIsCreated(true);
             setSelectedComment(comments[ans]);
@@ -142,55 +156,37 @@ function Highlighter() {
         }
     }
 
-    let endCnt = [];
-    let purifiedEnd = purifyArray(highlightEndIntervals, endCnt);
+    let endCount = [];
+    let withoutReptitousEnd = oddRepetitousOut(highlightEndIntervals, endCount);
 
-    let startCnt = [];
-    let purifiedStart = purifyArray(highlightStartIntervals, startCnt);
+    let startCount = [];
+    let withoutRepetitousStart = oddRepetitousOut(highlightStartIntervals, startCount);
 
-    purifiedEnd.sort(function(a, b) {
+    withoutReptitousEnd.sort(function(a, b) {
         return a - b;
     });
 
-    purifiedStart.sort(function(a, b) {
+    withoutRepetitousStart.sort(function(a, b) {
         return a - b;
     });
 
-    var letters = findAnnotationsCountShadowingEachLetter(purifiedStart, startCnt, purifiedEnd, endCnt);
+    var letters = findAnnotationsCountShadowingEachLetter(withoutRepetitousStart, startCount, withoutReptitousEnd, endCount);
 
     const parts = divideTextIntoGivenParts(letters);
 
-    if (text.length === 0) {
-        return(
-            <div id="unique" onMouseUp={handleMouseUp}>
-                <div>{text}</div>
+    return(
+        <div id="unique" onMouseUp={handleMouseUp}>
+            <div>{text.length === 0 ? text : parts}</div>
 
-                <PositionedMenu
-                    isCreated={isCreated}
-                    selectedComment={selectedComment}
-                    leftInterval={leftInterval} 
-                    rightInterval={rightInterval} 
-                    clickPosition={clickPosition}
-                    metadata={selectionMetadata}/>
-            </div>
-        );
-    } else {
-        return(
-            <div id="unique" onMouseUp={handleMouseUp}>
-                <div>
-                    {parts}
-                </div>
-
-                <PositionedMenu
-                        isCreated={isCreated}
-                        selectedComment={selectedComment}
-                        leftInterval={leftInterval} 
-                        rightInterval={rightInterval} 
-                        clickPosition={clickPosition}
-                        metadata={selectionMetadata}/>
-            </div>
-        );
-    }
+            <PositionedMenu
+                isCreated={isCreated}
+                selectedComment={selectedComment}
+                leftInterval={leftInterval} 
+                rightInterval={rightInterval} 
+                clickPosition={clickPosition}
+                metadata={selectionMetadata}/>
+        </div>
+    );
 }
 
 export default Highlighter;

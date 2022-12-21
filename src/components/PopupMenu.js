@@ -53,7 +53,8 @@ export default function PositionedMenu(props) {
   function handleClose() {
     console.log("CLOSED");
     if (!isCreated) {
-      highlightsContext.deleteHighlightInterval(leftInterval);
+      console.log("YOU KIDDING ME RIGHT? " + rightInterval);
+      highlightsContext.deleteHighlightInterval(leftInterval, rightInterval);
     }
     // highlightsContext.deleteHighlightInterval(leftInterval);
     setOpen(false);
@@ -62,18 +63,18 @@ export default function PositionedMenu(props) {
   function handleClick() {
     if (document.getElementById('outlined-basic').value.length !== 0) {
       if (isCreated) {
-        highlightsContext.modifyComments(leftInterval, document.getElementById('outlined-basic').value)
+        highlightsContext.modifyComments(leftInterval, rightInterval, document.getElementById('outlined-basic').value)
       } else {
         console.log("CLICKED");
         // highlightsContext.deleteHighlightInterval(leftInterval);
-        highlightsContext.modifyComments(leftInterval, document.getElementById('outlined-basic').value);
+        highlightsContext.modifyComments(leftInterval, rightInterval, document.getElementById('outlined-basic').value);
       }
       setOpen(false);
     }
   }
 
   function handleRemove() {
-    highlightsContext.deleteHighlightInterval(leftInterval);
+    highlightsContext.deleteHighlightInterval(leftInterval, rightInterval);
     setOpen(false);
   }
 
