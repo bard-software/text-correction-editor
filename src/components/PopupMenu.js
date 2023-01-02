@@ -1,150 +1,94 @@
-import { useContext, useState } from 'react'
+import { useEffect, useContext, useRef, useState } from 'react'
 
-import Popover from '@mui/material/Popover';
 import HighlightsContext from '../store/highlights-context';
-import { Button } from '@mui/material';
-import { TextField } from '@mui/material'
 
-import classes from '../style/PopupMenu.module.css'
-
-export default function PositionedMenu(props) {
+export default function PopupMenu(props) {
   const highlightsContext = useContext(HighlightsContext);
-  const [open, setOpen] = useState(true);
-  const [lastLeftInterval, setLastLeftInterval] = useState(-1);
-  const [lastClickPosition, setLastClickPosiiton] = useState(-1);
 
-  const metadata = props.metadata;
+  const [isOpen, setIsOpen] = useState(false);
 
-  if (metadata === null)
-    return;
+  const lastRandom = useRef(-1);
 
-  var leftInterval = -1;
-  leftInterval = props.leftInterval;
-  const rightInterval = props.rightInterval;
-  
-  var clickPosition = -1;
-  clickPosition = props.clickPosition;
-
-  const leftPos = metadata.getRangeAt(0).getBoundingClientRect().left;
-  const topPos = metadata.getRangeAt(0).getBoundingClientRect().top;
-  const width = metadata.getRangeAt(0).getBoundingClientRect().width;
-
+  const highlightStart = props.highlightStart;
+  const highlightEnd = props.highlightEnd;
+  const selectedComment = props.selectedComment;
   const isCreated = props.isCreated;
-  const comment = props.selectedComment;
+  const random = props.random;
 
-  if ((leftInterval !== -1 && leftInterval !== lastLeftInterval) 
-      || (isCreated && clickPosition !== -1 && clickPosition !== lastClickPosition)) {
-    setOpen(true);
-    setLastLeftInterval(leftInterval);
+  //hook to detect outside click
+  function useOutsideAlerter(ref) {
+    useEffect(() => {
+      function handleClickOutside(event) {
+        if (ref.current && !ref.current.contains(event.target)) {
+          handleClose();
+        }
+      }
 
-    if (isCreated)
-        setLastClickPosiiton(clickPosition);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+
+    }, [ref, handleClose]);
   }
 
-  function handleFocus() {
-    console.log("FOCUSED");
-    if (!isCreated) {
-      highlightsContext.addHighlightStartInterval(leftInterval);
-      highlightsContext.addHighlightEndInterval(rightInterval);
-      highlightsContext.addComment("TESTING");
+  const wrapperRef = useRef(null);
+  useOutsideAlerter(wrapperRef);
+
+  function addHighlight() {
+    if (!highlightsContext.isHighlightAdded(highlightStart, highlightEnd)) {
+      highlightsContext.addHighlightStart(highlightStart);
+      highlightsContext.addHighlightEnd(highlightEnd);
+      highlightsContext.addComment("");
     }
+  }
+
+  function modifyHighlight() {
+    highlightsContext.modifyComments(highlightStart, highlightEnd, document.getElementById('outlined-basic').value);
+    setIsOpen(false);
+  }
+
+  function removeHighlight() {
+    highlightsContext.deleteHighlight(highlightStart, highlightEnd);
+    setIsOpen(false);
   }
 
   function handleClose() {
-    console.log("CLOSED");
-    if (!isCreated) {
-      console.log("YOU KIDDING ME RIGHT? " + rightInterval);
-      highlightsContext.deleteHighlightInterval(leftInterval, rightInterval);
-    }
-    // highlightsContext.deleteHighlightInterval(leftInterval);
-    setOpen(false);
+    setIsOpen(false);
+    if (!isCreated)
+      highlightsContext.deleteHighlight(highlightStart, highlightEnd);
   }
 
-  function handleClick() {
-    if (document.getElementById('outlined-basic').value.length !== 0) {
-      if (isCreated) {
-        highlightsContext.modifyComments(leftInterval, rightInterval, document.getElementById('outlined-basic').value)
-      } else {
-        console.log("CLICKED");
-        // highlightsContext.deleteHighlightInterval(leftInterval);
-        highlightsContext.modifyComments(leftInterval, rightInterval, document.getElementById('outlined-basic').value);
+  if (highlightStart !== highlightEnd && random !== -1 && lastRandom.current !== random) {
+    lastRandom.current = random;
+    setIsOpen(true);
+  }
+
+  return (
+    <div>
+      { isOpen &&
+        <div
+          id="popover"
+          onClick={addHighlight}
+          ref={wrapperRef}
+          style={{
+            position: 'fixed',
+            top: `${props.topPos}px`,
+            left: `${props.leftPos + ((props.width) / 2)}px`,
+            background: 'white',
+            transform: 'translate(-50%, -100%)',
+            border: '1px solid black',
+          }} 
+        >
+        
+          <input type="text" id="outlined-basic" name="Outlined" defaultValue={selectedComment}/>
+        
+          <button onClick={modifyHighlight} >Submit</button>
+
+          { isCreated && <button onClick={removeHighlight}>Remove</button> }
+
+        </div>
       }
-      setOpen(false);
-    }
-  }
-
-  function handleRemove() {
-    highlightsContext.deleteHighlightInterval(leftInterval, rightInterval);
-    setOpen(false);
-  }
-
-  console.log("CHECKING : " + open);
-
-  console.log("RIGHT : " + rightInterval);
-  console.log("LEFT : " + leftInterval);
-
-  if(open) {
-    
-  }
-
-  if (rightInterval - leftInterval > 0 || isCreated) {
-    if (isCreated) {
-      return (
-        <div>
-          <Popover
-            anchorReference="anchorPosition"
-            open={open}
-            onClose={handleClose}
-            anchorPosition={{ top: topPos - 10, left: leftPos + ((3 * width) / 4) }}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-            transformOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }} >
-    
-            <div className={classes.menu}>
-              <TextField onFocus={handleFocus} id="outlined-basic" label="Outlined" variant="outlined" defaultValue={comment}/>
-    
-              <Button onClick={handleClick} variant="contained">Submit</Button>
-    
-              <Button onClick={handleRemove} variant="contained">Remove</Button>
-            </div>
-    
-          </Popover>
-    
-        </div>
-      );
-    } else {
-      return (
-        <div>
-          <Popover
-            anchorReference="anchorPosition"
-            open={open}
-            onClose={handleClose}
-            anchorPosition={{ top: topPos - 10, left: leftPos + ((3 * width) / 4) }}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'center',
-            }}
-            transformOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }} >
-    
-            <div className={classes.menu}>
-              <TextField onFocus={handleFocus} id="outlined-basic" label="Outlined" variant="outlined">{comment}</TextField>
-    
-              <Button onClick={handleClick} variant="contained">Submit</Button>
-            </div>
-          </Popover>
-    
-        </div>
-      );
-    }   
-  } else {
-    console.log("WOULD YOU CLUE ME IN?")
-  }
+    </div>
+  );
 }

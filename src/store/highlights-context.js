@@ -1,61 +1,62 @@
 import { useState, createContext } from "react";
 
 const HighlightsContext = createContext({
-    highlightStartIntervals : [],
-    highlightEndIntervals : [],
+    highlightStarts : [],
+    highlightEnds : [],
     comments : [],
-    addHighlightStartInterval : (start) => {},
-    addHighlightEndInterval : (end) => {},
+    addHighlightStart : (start) => {},
+    addHighlightEnd : (end) => {},
     addComment : (comment) => {},
-    modifyComments : (start, newComment) => {},
-    deleteHighlightInterval : (start) => {}
+    modifyComments : (start, end, newComment) => {},
+    deleteHighlight : (start, end) => {},
+    isHighlightAdded : (start, end) => {}
 });
 
 export function HighlightsContextProvider(props) {
-    const [updatedStartIntervals, setUpdatedStartIntervals] = useState([]);
-    const [updatedEndIntervals, setUpdatedEndIntervals] = useState([]);
+    const [updatedStarts, setUpdatedStarts] = useState([]);
+    const [updatedEnds, setUpdatedEnds] = useState([]);
     const [updatedComments, setUpdatedComments] = useState([]);
 
-    const n = updatedStartIntervals.length;
+    const n = updatedStarts.length;
 
     for(let i = 0; i < n; i++) {
         let min = i;
         for(let j = i + 1; j < n; j++){
-            if(updatedStartIntervals[j] < updatedStartIntervals[min]) {
+            if(updatedStarts[j] < updatedStarts[min]) {
                 min = j; 
             }
          }
 
          if (min !== i) {
-            let tmpStart = updatedStartIntervals[i];
-            let tmpEnd = updatedEndIntervals[i];
+            let tmpStart = updatedStarts[i];
+            let tmpEnd = updatedEnds[i];
             let tmpComment = updatedComments[i];
              
-            updatedStartIntervals[i] = updatedStartIntervals[min];
-            updatedEndIntervals[i] = updatedEndIntervals[min];
+            updatedStarts[i] = updatedStarts[min];
+            updatedEnds[i] = updatedEnds[min];
             updatedComments[i] = updatedComments[min];
 
-            updatedStartIntervals[min] = tmpStart;      
-            updatedEndIntervals[min] = tmpEnd;
+            updatedStarts[min] = tmpStart;      
+            updatedEnds[min] = tmpEnd;
             updatedComments[min] = tmpComment;
         }
     }
     
-    console.log("LENGTH : " + updatedStartIntervals.length);
-    for (var i = 0; i < updatedEndIntervals.length; i++) {
-        console.log("START : " + updatedStartIntervals[i]);
-        console.log("END : " + updatedEndIntervals[i]);
+    console.log("LENGTH : " + updatedStarts.length);
+    for (var i = 0; i < updatedEnds.length; i++) {
+        console.log("START : " + updatedStarts[i]);
+        console.log("END : " + updatedEnds[i]);
         console.log("COMMENT : " + updatedComments[i]);
     }
 
-    function addHighlightStartIntervalHandler(start) {
-        setUpdatedStartIntervals((pre) => {
+    function addHighlightStartHandler(start) {
+        setUpdatedStarts((pre) => {
             return pre.concat(start);
         });
     }
 
-    function addHighlightEndIntervalHandler(end) {
-        setUpdatedEndIntervals((pre) => {
+    function addHighlightEndHandler(end) {
+        setUpdatedEnds((pre) => {
             return pre.concat(end);
         });
     }   
@@ -68,8 +69,8 @@ export function HighlightsContextProvider(props) {
 
     function modifyCommentsHandler(start, end, newComment) {
         let toModifyIndex = -1;
-        for (let i = 0; i < updatedStartIntervals.length; i++) {
-            if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end) {
+        for (let i = 0; i < updatedStarts.length; i++) {
+            if (updatedStarts[i] === start && updatedEnds[i] === end) {
                 toModifyIndex = i;
                 break;
             }
@@ -83,20 +84,22 @@ export function HighlightsContextProvider(props) {
         });
     }
 
-    function deleteHighlightIntervalHandler(start, end) {
+    function deleteHighlightHandler(start, end) {
         let toDeleteIndex = -1;
-        for (let i = 0; i < updatedStartIntervals.length; i++) {
-            if (updatedStartIntervals[i] === start && updatedEndIntervals[i] === end) {
+        for (let i = 0; i < updatedStarts.length; i++) {
+            if (updatedStarts[i] === start && updatedEnds[i] === end) {
                 toDeleteIndex = i;
                 break;
             }
         }
+
+        if (toDeleteIndex === -1) return;
         
-        setUpdatedStartIntervals((pre) => {
+        setUpdatedStarts((pre) => {
             return pre.filter((_, index) => index !== toDeleteIndex);
         });
 
-        setUpdatedEndIntervals((pre) => {
+        setUpdatedEnds((pre) => {
             return pre.filter((_, index) => index !== toDeleteIndex);
         });
 
@@ -105,16 +108,32 @@ export function HighlightsContextProvider(props) {
         });
 
     }
+
+    function isHighlightAddedHandler(start, end) {
+        let index = -1;
+        for (let i = 0; i < updatedStarts.length; i++) {
+            if (updatedStarts[i] === start && updatedEnds[i] === end) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index === -1)
+            return false;
+        else
+            return true;
+    }
     
     const context = {
-        highlightStartIntervals : updatedStartIntervals,
-        highlightEndIntervals : updatedEndIntervals,
+        highlightStarts : updatedStarts,
+        highlightEnds : updatedEnds,
         comments : updatedComments,
-        addHighlightEndInterval : addHighlightEndIntervalHandler,
-        addHighlightStartInterval : addHighlightStartIntervalHandler,
+        addHighlightEnd : addHighlightEndHandler,
+        addHighlightStart : addHighlightStartHandler,
         addComment : addCommentHandler,
         modifyComments : modifyCommentsHandler,
-        deleteHighlightInterval : deleteHighlightIntervalHandler
+        deleteHighlight : deleteHighlightHandler,
+        isHighlightAdded : isHighlightAddedHandler
     }
 
     return (
